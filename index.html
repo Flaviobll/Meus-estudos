@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Planejador de rotina de estudos — cadastre módulos, marque seus dias e acompanhe sua evolução.">
+  <title>Minha Rotina de Estudos</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#6366f1">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Estudos">
+  <link rel="apple-touch-icon" href="icon-512.png">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    /* ============ RESET & VARIABLES ============ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-primary: #0f1117;
+      --bg-secondary: #161822;
+      --bg-card: #1c1f2e;
+      --bg-card-hover: #242740;
+      --bg-input: #1a1d2b;
+      --border: #2a2d3e;
+      --border-focus: #6366f1;
+      --text-primary: #e8eaed;
+      --text-secondary: #9ca3af;
+      --text-muted: #6b7280;
+      --accent: #6366f1;
+      --accent-light: #818cf8;
+      --accent-glow: rgba(99, 102, 241, 0.25);
+      --green: #22c55e;
+      --green-glow: rgba(34, 197, 94, 0.2);
+      --amber: #f59e0b;
+      --amber-glow: rgba(245, 158, 11, 0.15);
+      --cyan: #06b6d4;
+      --rose: #f43f5e;
+      --rose-glow: rgba(244, 63, 94, 0.15);
+      --radius: 12px;
+      --radius-sm: 8px;
+      --radius-lg: 16px;
+      --shadow: 0 4px 24px rgba(0,0,0,0.3);
+      --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    html { font-size: 15px; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ============ LAYOUT ============ */
+    .app {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 24px 20px 80px;
+    }
+
+    /* ============ HEADER ============ */
+    .header {
+      text-align: center;
+      padding: 32px 0 24px;
+      position: relative;
+    }
+    .header::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80px;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-light));
+      border-radius: 4px;
+    }
+    .header h1 {
+      font-size: 1.9rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, var(--text-primary), var(--accent-light));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .header p {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      margin-top: 6px;
+    }
+
+    /* ============ STATS BAR ============ */
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin: 28px 0;
+    }
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      text-align: center;
+      transition: var(--transition);
+    }
+    .stat-card:hover {
+      border-color: var(--accent);
+      box-shadow: 0 0 20px var(--accent-glow);
+      transform: translateY(-2px);
+    }
+    .stat-card .stat-value {
+      font-size: 1.8rem;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+    .stat-card .stat-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    .stat-card.streak .stat-value { color: var(--amber); }
+    .stat-card.total .stat-value { color: var(--green); }
+    .stat-card.modules .stat-value { color: var(--accent-light); }
+    .stat-card.week .stat-value { color: var(--cyan); }
+
+    /* ============ SECTIONS ============ */
+    .section {
+      margin-top: 32px;
+    }
+    .section-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-title .icon {
+      width: 28px;
+      height: 28px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.95rem;
+    }
+
+    /* ============ MODULES ============ */
+    .module-form {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .module-form input {
+      flex: 1;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 0.88rem;
+      outline: none;
+      transition: var(--transition);
+    }
+    .module-form input::placeholder { color: var(--text-muted); }
+    .module-form input:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 18px;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      white-space: nowrap;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-light));
+      color: #fff;
+    }
+    .btn-primary:hover {
+      box-shadow: 0 0 20px var(--accent-glow);
+      transform: translateY(-1px);
+    }
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 0.78rem;
+    }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-muted);
+      padding: 6px 8px;
+    }
+    .btn-ghost:hover { color: var(--rose); }
+
+    .module-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .module-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 0.84rem;
+      font-weight: 500;
+      transition: var(--transition);
+      animation: chipIn 0.3s ease;
+    }
+    @keyframes chipIn {
+      from { opacity: 0; transform: scale(0.85); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .module-chip .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .module-chip .remove {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 1rem;
+      line-height: 1;
+      padding: 0 0 0 4px;
+      transition: var(--transition);
+    }
+    .module-chip .remove:hover { color: var(--rose); }
+    .empty-state {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      font-style: italic;
+      padding: 12px 0;
+    }
+
+    /* ============ WEEKLY VIEW ============ */
+    .week-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .week-nav .week-label {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+    .week-nav .nav-btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      border-radius: var(--radius-sm);
+      width: 34px;
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: var(--transition);
+    }
+    .week-nav .nav-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent-light);
+    }
+
+    .week-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+    }
+
+    .day-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 10px;
+      text-align: center;
+      transition: var(--transition);
+      position: relative;
+      min-height: 140px;
+      display: flex;
+      flex-direction: column;
+    }
+    .day-card:hover {
+      border-color: var(--border-focus);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+    }
+    .day-card.today {
+      border-color: var(--accent);
+      box-shadow: 0 0 16px var(--accent-glow);
+    }
+    .day-card.done {
+      border-color: var(--green);
+      box-shadow: 0 0 12px var(--green-glow);
+    }
+
+    .day-name {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+    }
+    .day-date {
+      font-size: 1.3rem;
+      font-weight: 800;
+      margin: 4px 0 6px;
+    }
+    .day-card.today .day-date { color: var(--accent-light); }
+
+    .day-type {
+      font-size: 0.68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 3px 8px;
+      border-radius: 10px;
+      display: inline-block;
+      margin: 0 auto 8px;
+    }
+    .day-type.estudo {
+      background: var(--accent-glow);
+      color: var(--accent-light);
+    }
+    .day-type.revisao {
+      background: var(--amber-glow);
+      color: var(--amber);
+    }
+    .day-type.descanso {
+      background: rgba(107, 114, 128, 0.15);
+      color: var(--text-muted);
+    }
+
+    .day-time {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .day-actions {
+      margin-top: auto;
+    }
+    .mark-btn {
+      width: 100%;
+      padding: 7px 0;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg-input);
+      color: var(--text-secondary);
+      font-family: inherit;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .mark-btn:hover {
+      border-color: var(--green);
+      color: var(--green);
+      background: var(--green-glow);
+    }
+    .mark-btn.done-btn {
+      background: var(--green-glow);
+      border-color: var(--green);
+      color: var(--green);
+    }
+
+    .done-check {
+      font-size: 1.3rem;
+      margin-top: auto;
+      color: var(--green);
+      animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes popIn {
+      from { transform: scale(0); }
+      to { transform: scale(1); }
+    }
+
+    /* ============ MODAL ============ */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(6px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .modal {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      width: 90%;
+      max-width: 420px;
+      transform: scale(0.92) translateY(20px);
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 24px 48px rgba(0,0,0,0.4);
+    }
+    .modal-overlay.active .modal {
+      transform: scale(1) translateY(0);
+    }
+    .modal h3 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .modal .modal-sub {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-bottom: 18px;
+    }
+    .modal-modules {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 280px;
+      overflow-y: auto;
+      margin-bottom: 20px;
+    }
+    .modal-module-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: var(--transition);
+      user-select: none;
+    }
+    .modal-module-item:hover {
+      border-color: var(--accent);
+    }
+    .modal-module-item.selected {
+      border-color: var(--green);
+      background: var(--green-glow);
+    }
+    .modal-module-item .checkbox {
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--border);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition);
+      flex-shrink: 0;
+      font-size: 0.75rem;
+      color: transparent;
+    }
+    .modal-module-item.selected .checkbox {
+      background: var(--green);
+      border-color: var(--green);
+      color: #fff;
+    }
+    .modal-module-item .mod-name {
+      font-size: 0.88rem;
+      font-weight: 500;
+    }
+    .modal-module-item .mod-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .modal-note {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 0.85rem;
+      resize: vertical;
+      min-height: 50px;
+      outline: none;
+      margin-bottom: 16px;
+      transition: var(--transition);
+    }
+    .modal-note::placeholder { color: var(--text-muted); }
+    .modal-note:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+    .btn-cancel {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+    }
+    .btn-cancel:hover {
+      border-color: var(--text-muted);
+    }
+    .btn-save {
+      background: linear-gradient(135deg, var(--green), #16a34a);
+      color: #fff;
+    }
+    .btn-save:hover {
+      box-shadow: 0 0 20px var(--green-glow);
+    }
+
+    /* ============ CALENDAR ============ */
+    .calendar-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .calendar-nav .month-label {
+      font-size: 0.95rem;
+      font-weight: 700;
+    }
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+    }
+    .cal-header {
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      text-align: center;
+      padding: 6px 0;
+    }
+    .cal-day {
+      aspect-ratio: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-sm);
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      position: relative;
+      transition: var(--transition);
+    }
+    .cal-day.current-month { color: var(--text-secondary); }
+    .cal-day.today {
+      color: var(--accent-light);
+      font-weight: 700;
+      background: var(--accent-glow);
+    }
+    .cal-day.done {
+      color: var(--green);
+      font-weight: 700;
+    }
+    .cal-day.done::after {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      position: absolute;
+      bottom: 3px;
+    }
+    .cal-day.rest {
+      opacity: 0.4;
+    }
+
+    /* ============ HISTORY ============ */
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .history-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      transition: var(--transition);
+      animation: slideIn 0.3s ease;
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(-10px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    .history-item:hover { border-color: var(--border-focus); }
+    .history-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-top: 6px;
+      flex-shrink: 0;
+    }
+    .history-dot.estudo { background: var(--green); }
+    .history-dot.revisao { background: var(--amber); }
+    .history-content { flex: 1; }
+    .history-date {
+      font-size: 0.82rem;
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+    .history-type {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .history-modules-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 6px;
+    }
+    .history-mod-tag {
+      font-size: 0.72rem;
+      font-weight: 500;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+    }
+    .history-note {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-top: 4px;
+      font-style: italic;
+    }
+    .history-remove {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.9rem;
+      padding: 4px;
+      transition: var(--transition);
+      flex-shrink: 0;
+    }
+    .history-remove:hover { color: var(--rose); }
+
+    /* ============ RESPONSIVE ============ */
+    @media (max-width: 700px) {
+      .week-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .day-card:last-child {
+        grid-column: span 2;
+      }
+      .stats-bar {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    @media (max-width: 420px) {
+      .week-grid {
+        grid-template-columns: 1fr;
+      }
+      .day-card:last-child {
+        grid-column: span 1;
+      }
+      .app { padding: 16px 12px 80px; }
+    }
+
+    /* ============ SCROLLBAR ============ */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 8px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+    /* ============ TOOLTIP / MISC ============ */
+    .fade-enter { animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    .tabs {
+      display: flex;
+      gap: 4px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 4px;
+      margin-bottom: 16px;
+    }
+    .tab {
+      flex: 1;
+      padding: 8px 12px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-family: inherit;
+      font-size: 0.82rem;
+      font-weight: 600;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .tab:hover { color: var(--text-secondary); }
+    .tab.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+  </style>
+</head>
+<body>
+
+<div class="app" id="app">
+  <!-- HEADER -->
+  <header class="header">
+    <h1>📚 Minha Rotina de Estudos</h1>
+    <p>Seg–Sex: Estudo 1h30 &nbsp;·&nbsp; Sáb: Revisão &nbsp;·&nbsp; Dom: Descanso</p>
+  </header>
+
+  <!-- STATS -->
+  <div class="stats-bar" id="statsBar">
+    <div class="stat-card streak">
+      <div class="stat-value" id="statStreak">0</div>
+      <div class="stat-label">Dias seguidos</div>
+    </div>
+    <div class="stat-card total">
+      <div class="stat-value" id="statTotal">0</div>
+      <div class="stat-label">Sessões feitas</div>
+    </div>
+    <div class="stat-card modules">
+      <div class="stat-value" id="statModules">0</div>
+      <div class="stat-label">Módulos</div>
+    </div>
+    <div class="stat-card week">
+      <div class="stat-value" id="statWeek">0/6</div>
+      <div class="stat-label">Esta semana</div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" data-tab="semana" id="tabSemana">📅 Semana</button>
+    <button class="tab" data-tab="modulos" id="tabModulos">📦 Módulos</button>
+    <button class="tab" data-tab="calendario" id="tabCalendario">🗓️ Calendário</button>
+    <button class="tab" data-tab="historico" id="tabHistorico">📋 Histórico</button>
+  </div>
+
+  <!-- TAB: SEMANA -->
+  <div class="tab-content active" id="panelSemana">
+    <div class="week-nav">
+      <button class="nav-btn" id="prevWeek">◀</button>
+      <span class="week-label" id="weekLabel"></span>
+      <button class="nav-btn" id="nextWeek">▶</button>
+    </div>
+    <div class="week-grid" id="weekGrid"></div>
+  </div>
+
+  <!-- TAB: MÓDULOS -->
+  <div class="tab-content" id="panelModulos">
+    <div class="section">
+      <div class="section-title">
+        <span class="icon" style="background:var(--accent-glow);">📦</span>
+        Módulos de Estudo
+      </div>
+      <div class="module-form">
+        <input type="text" id="moduleInput" placeholder="Nome do módulo (ex: Matemática, Inglês…)" maxlength="40">
+        <button class="btn btn-primary" id="addModuleBtn">+ Adicionar</button>
+      </div>
+      <div class="module-list" id="moduleList"></div>
+    </div>
+  </div>
+
+  <!-- TAB: CALENDÁRIO -->
+  <div class="tab-content" id="panelCalendario">
+    <div class="section">
+      <div class="calendar-nav">
+        <button class="nav-btn" id="prevMonth">◀</button>
+        <span class="month-label" id="monthLabel"></span>
+        <button class="nav-btn" id="nextMonth">▶</button>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+    </div>
+  </div>
+
+  <!-- TAB: HISTÓRICO -->
+  <div class="tab-content" id="panelHistorico">
+    <div class="section">
+      <div class="section-title">
+        <span class="icon" style="background:var(--green-glow);">📋</span>
+        Sessões Registradas
+      </div>
+      <div class="history-list" id="historyList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Marcar dia -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h3 id="modalTitle">Marcar Estudo</h3>
+    <p class="modal-sub" id="modalSub"></p>
+    <div class="modal-modules" id="modalModules"></div>
+    <textarea class="modal-note" id="modalNote" placeholder="Anotação (opcional)…" rows="2"></textarea>
+    <div class="modal-actions">
+      <button class="btn btn-cancel" id="modalCancel">Cancelar</button>
+      <button class="btn btn-save" id="modalSave">✓ Marcar feito</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============ DATA ============
+const STORAGE_KEY = 'rotina_estudos_v2';
+const MODULE_COLORS = [
+  '#6366f1','#8b5cf6','#ec4899','#f43f5e','#f59e0b',
+  '#22c55e','#06b6d4','#3b82f6','#a855f7','#14b8a6',
+  '#e879f9','#fb923c','#84cc16','#0ea5e9','#f472b6'
+];
+const DIAS_SEMANA = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+const DIAS_FULL = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+function defaultData() {
+  return {
+    modules: [],
+    entries: [], // {date:'YYYY-MM-DD', type:'estudo'|'revisao', moduleIds:[], note:''}
+  };
+}
+
+function load() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  return defaultData();
+}
+
+function save(data) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+let data = load();
+let currentWeekOffset = 0;
+let currentMonthOffset = 0;
+let modalDate = null;
+let modalType = null;
+
+// ============ UTILS ============
+function dateKey(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+
+function parseDate(s) {
+  const [y,m,d] = s.split('-').map(Number);
+  return new Date(y, m-1, d);
+}
+
+function getMonday(d) {
+  const dt = new Date(d);
+  const day = dt.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  dt.setDate(dt.getDate() + diff);
+  dt.setHours(0,0,0,0);
+  return dt;
+}
+
+function getDayType(dayOfWeek) {
+  // 0=Sun,1=Mon,...,6=Sat
+  if (dayOfWeek === 0) return 'descanso';
+  if (dayOfWeek === 6) return 'revisao';
+  return 'estudo';
+}
+
+function getDayTypeLabel(type) {
+  if (type === 'estudo') return 'Estudo · 1h30';
+  if (type === 'revisao') return 'Revisão';
+  return 'Descanso';
+}
+
+function getEntry(dateStr) {
+  return data.entries.find(e => e.date === dateStr);
+}
+
+function isToday(d) {
+  const t = new Date();
+  return d.getFullYear() === t.getFullYear() && d.getMonth() === t.getMonth() && d.getDate() === t.getDate();
+}
+
+function getModuleColor(id) {
+  const idx = data.modules.findIndex(m => m.id === id);
+  return MODULE_COLORS[idx % MODULE_COLORS.length];
+}
+
+// ============ TABS ============
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('panel' + capitalize(tab.dataset.tab)).classList.add('active');
+  });
+});
+
+function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+// ============ MODULES ============
+function renderModules() {
+  const list = document.getElementById('moduleList');
+  if (data.modules.length === 0) {
+    list.innerHTML = '<p class="empty-state">Nenhum módulo cadastrado. Adicione acima!</p>';
+    return;
+  }
+  list.innerHTML = data.modules.map((m, i) => `
+    <div class="module-chip" style="border-color:${MODULE_COLORS[i % MODULE_COLORS.length]}30;">
+      <span class="dot" style="background:${MODULE_COLORS[i % MODULE_COLORS.length]};"></span>
+      <span>${escHtml(m.name)}</span>
+      <button class="remove" data-id="${m.id}" title="Remover módulo">×</button>
+    </div>
+  `).join('');
+  list.querySelectorAll('.remove').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (confirm(`Remover o módulo "${data.modules.find(m=>m.id===btn.dataset.id)?.name}"?`)) {
+        data.modules = data.modules.filter(m => m.id !== btn.dataset.id);
+        data.entries.forEach(e => {
+          e.moduleIds = e.moduleIds.filter(id => id !== btn.dataset.id);
+        });
+        save(data);
+        renderAll();
+      }
+    });
+  });
+}
+
+document.getElementById('addModuleBtn').addEventListener('click', addModule);
+document.getElementById('moduleInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addModule();
+});
+
+function addModule() {
+  const input = document.getElementById('moduleInput');
+  const name = input.value.trim();
+  if (!name) return;
+  if (data.modules.some(m => m.name.toLowerCase() === name.toLowerCase())) {
+    alert('Esse módulo já existe!');
+    return;
+  }
+  data.modules.push({ id: 'mod_' + Date.now() + '_' + Math.random().toString(36).slice(2,6), name });
+  save(data);
+  input.value = '';
+  renderAll();
+}
+
+// ============ WEEK VIEW ============
+function renderWeek() {
+  const today = new Date();
+  const monday = getMonday(today);
+  monday.setDate(monday.getDate() + currentWeekOffset * 7);
+
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(d.getDate() + i);
+    days.push(d);
+  }
+
+  const sundayOfWeek = days[6];
+  const label = `${days[0].getDate()} ${MESES[days[0].getMonth()].slice(0,3)} — ${sundayOfWeek.getDate()} ${MESES[sundayOfWeek.getMonth()].slice(0,3)} ${sundayOfWeek.getFullYear()}`;
+  document.getElementById('weekLabel').textContent = label;
+
+  // Reorder: Seg, Ter, Qua, Qui, Sex, Sáb, Dom
+  const ordered = [...days.slice(0, 7)]; // already Mon first
+
+  const grid = document.getElementById('weekGrid');
+  grid.innerHTML = ordered.map(d => {
+    const key = dateKey(d);
+    const dow = d.getDay();
+    const type = getDayType(dow);
+    const entry = getEntry(key);
+    const todayClass = isToday(d) ? ' today' : '';
+    const doneClass = entry ? ' done' : '';
+
+    let actions = '';
+    if (type === 'descanso') {
+      actions = `<div class="day-time" style="margin-top:auto;opacity:0.5;">😴 Descanso</div>`;
+    } else if (entry) {
+      actions = `
+        <div class="done-check">✓</div>
+        <button class="mark-btn done-btn" data-date="${key}" data-type="${type}">Editar</button>
+      `;
+    } else {
+      actions = `<button class="mark-btn" data-date="${key}" data-type="${type}">Marcar feito</button>`;
+    }
+
+    const dayLabel = DIAS_SEMANA[dow];
+
+    return `
+      <div class="day-card${todayClass}${doneClass}">
+        <div class="day-name">${dayLabel}</div>
+        <div class="day-date">${d.getDate()}</div>
+        <span class="day-type ${type}">${getDayTypeLabel(type)}</span>
+        <div class="day-actions">${actions}</div>
+      </div>
+    `;
+  }).join('');
+
+  grid.querySelectorAll('.mark-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      openModal(btn.dataset.date, btn.dataset.type);
+    });
+  });
+}
+
+document.getElementById('prevWeek').addEventListener('click', () => { currentWeekOffset--; renderWeek(); });
+document.getElementById('nextWeek').addEventListener('click', () => { currentWeekOffset++; renderWeek(); });
+
+// ============ MODAL ============
+function openModal(dateStr, type) {
+  modalDate = dateStr;
+  modalType = type;
+  const d = parseDate(dateStr);
+  const dayName = DIAS_FULL[d.getDay()];
+  document.getElementById('modalTitle').textContent = type === 'revisao' ? '📝 Marcar Revisão' : '📖 Marcar Estudo';
+  document.getElementById('modalSub').textContent = `${dayName}, ${d.getDate()} de ${MESES[d.getMonth()]} de ${d.getFullYear()}`;
+
+  const entry = getEntry(dateStr);
+  const selectedIds = entry ? entry.moduleIds : [];
+
+  const modList = document.getElementById('modalModules');
+  if (data.modules.length === 0) {
+    modList.innerHTML = '<p class="empty-state">Cadastre módulos primeiro na aba "Módulos".</p>';
+  } else {
+    modList.innerHTML = data.modules.map((m, i) => {
+      const sel = selectedIds.includes(m.id) ? ' selected' : '';
+      return `
+        <div class="modal-module-item${sel}" data-id="${m.id}">
+          <div class="checkbox">✓</div>
+          <span class="mod-dot" style="background:${MODULE_COLORS[i % MODULE_COLORS.length]};"></span>
+          <span class="mod-name">${escHtml(m.name)}</span>
+        </div>
+      `;
+    }).join('');
+    modList.querySelectorAll('.modal-module-item').forEach(item => {
+      item.addEventListener('click', () => item.classList.toggle('selected'));
+    });
+  }
+
+  document.getElementById('modalNote').value = entry ? (entry.note || '') : '';
+  document.getElementById('modalOverlay').classList.add('active');
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('active');
+  modalDate = null;
+  modalType = null;
+}
+
+document.getElementById('modalCancel').addEventListener('click', closeModal);
+document.getElementById('modalOverlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeModal();
+});
+
+document.getElementById('modalSave').addEventListener('click', () => {
+  const selectedIds = [];
+  document.querySelectorAll('.modal-module-item.selected').forEach(el => {
+    selectedIds.push(el.dataset.id);
+  });
+  const note = document.getElementById('modalNote').value.trim();
+
+  const existing = data.entries.findIndex(e => e.date === modalDate);
+  const entry = {
+    date: modalDate,
+    type: modalType,
+    moduleIds: selectedIds,
+    note: note,
+  };
+  if (existing >= 0) {
+    data.entries[existing] = entry;
+  } else {
+    data.entries.push(entry);
+  }
+  save(data);
+  closeModal();
+  renderAll();
+});
+
+// ============ CALENDAR ============
+function renderCalendar() {
+  const today = new Date();
+  const viewMonth = new Date(today.getFullYear(), today.getMonth() + currentMonthOffset, 1);
+  const year = viewMonth.getFullYear();
+  const month = viewMonth.getMonth();
+
+  document.getElementById('monthLabel').textContent = `${MESES[month]} ${year}`;
+
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const startDow = (firstDay.getDay() + 6) % 7; // Mon=0
+
+  const headers = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+  let html = headers.map(h => `<div class="cal-header">${h}</div>`).join('');
+
+  // blanks before first day
+  for (let i = 0; i < startDow; i++) {
+    html += '<div class="cal-day"></div>';
+  }
+
+  for (let d = 1; d <= lastDay.getDate(); d++) {
+    const dt = new Date(year, month, d);
+    const key = dateKey(dt);
+    const entry = getEntry(key);
+    const dow = dt.getDay();
+    const type = getDayType(dow);
+    let cls = 'cal-day current-month';
+    if (isToday(dt)) cls += ' today';
+    if (entry) cls += ' done';
+    if (type === 'descanso') cls += ' rest';
+    html += `<div class="${cls}">${d}</div>`;
+  }
+
+  document.getElementById('calGrid').innerHTML = html;
+}
+
+document.getElementById('prevMonth').addEventListener('click', () => { currentMonthOffset--; renderCalendar(); });
+document.getElementById('nextMonth').addEventListener('click', () => { currentMonthOffset++; renderCalendar(); });
+
+// ============ HISTORY ============
+function renderHistory() {
+  const list = document.getElementById('historyList');
+  const sorted = [...data.entries].sort((a,b) => b.date.localeCompare(a.date));
+
+  if (sorted.length === 0) {
+    list.innerHTML = '<p class="empty-state">Nenhuma sessão registrada ainda.</p>';
+    return;
+  }
+
+  list.innerHTML = sorted.map(e => {
+    const d = parseDate(e.date);
+    const dayName = DIAS_FULL[d.getDay()];
+    const dateLabel = `${dayName}, ${d.getDate()} de ${MESES[d.getMonth()]}`;
+    const mods = e.moduleIds.map(id => {
+      const m = data.modules.find(mod => mod.id === id);
+      const color = m ? getModuleColor(id) : '#666';
+      return m ? `<span class="history-mod-tag" style="border-color:${color}40;color:${color};">${escHtml(m.name)}</span>` : '';
+    }).filter(Boolean).join('');
+    const note = e.note ? `<div class="history-note">"${escHtml(e.note)}"</div>` : '';
+
+    return `
+      <div class="history-item">
+        <div class="history-dot ${e.type}"></div>
+        <div class="history-content">
+          <div class="history-date">${dateLabel}</div>
+          <div class="history-type">${e.type === 'revisao' ? '📝 Revisão' : '📖 Estudo · 1h30'}</div>
+          ${mods ? `<div class="history-modules-list">${mods}</div>` : ''}
+          ${note}
+        </div>
+        <button class="history-remove" data-date="${e.date}" title="Remover registro">×</button>
+      </div>
+    `;
+  }).join('');
+
+  list.querySelectorAll('.history-remove').forEach(btn => {
+    btn.addEventListener('click', () => {
+      data.entries = data.entries.filter(e => e.date !== btn.dataset.date);
+      save(data);
+      renderAll();
+    });
+  });
+}
+
+// ============ STATS ============
+function renderStats() {
+  // Total sessions
+  document.getElementById('statTotal').textContent = data.entries.length;
+  // Modules
+  document.getElementById('statModules').textContent = data.modules.length;
+
+  // This week count
+  const today = new Date();
+  const monday = getMonday(today);
+  let weekCount = 0;
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(d.getDate() + i);
+    if (getEntry(dateKey(d))) weekCount++;
+  }
+  document.getElementById('statWeek').textContent = `${weekCount}/6`;
+
+  // Streak: count consecutive study/review days completed (rest days are transparent)
+  let streak = 0;
+  const check = new Date(today);
+  // If today has no entry and is not a rest day, start from yesterday
+  const todayType = getDayType(check.getDay());
+  if (todayType === 'descanso' || !getEntry(dateKey(check))) {
+    check.setDate(check.getDate() - 1);
+  }
+  let safetyCounter = 0;
+  while (safetyCounter < 400) {
+    safetyCounter++;
+    const dow = check.getDay();
+    const type = getDayType(dow);
+    if (type === 'descanso') {
+      // Rest days are transparent: skip without breaking or counting
+      check.setDate(check.getDate() - 1);
+      continue;
+    }
+    if (getEntry(dateKey(check))) {
+      streak++;
+      check.setDate(check.getDate() - 1);
+    } else {
+      break;
+    }
+  }
+  document.getElementById('statStreak').textContent = streak;
+}
+
+// ============ RENDER ALL ============
+function renderAll() {
+  renderModules();
+  renderWeek();
+  renderCalendar();
+  renderHistory();
+  renderStats();
+}
+
+function escHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// Init
+renderAll();
+</script>
+<script>
+  // Register Service Worker for PWA / offline support
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(reg => console.log('SW registered:', reg.scope))
+        .catch(err => console.log('SW registration failed:', err));
+    });
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+{
+  "name": "Minha Rotina de Estudos",
+  "short_name": "Estudos",
+  "description": "Cadastre módulos, marque seus dias e acompanhe sua rotina de estudos.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f1117",
+  "theme_color": "#6366f1",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
